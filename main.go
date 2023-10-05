@@ -21,8 +21,8 @@ import (
 	"os"
 	"reflect"
 
-	"azure-iot/config"
-	"azure-iot/functions"
+	"github.com/larrykuo1102/Edgex-App-Function/config"
+	"github.com/larrykuo1102/Edgex-App-Function/functions"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v3/pkg"
 	"github.com/edgexfoundry/app-functions-sdk-go/v3/pkg/interfaces"
@@ -65,12 +65,12 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 	// TODO: Replace with retrieving your custom ApplicationSettings from configuration or
 	//       remove if not using AppSetting configuration section.
 	// For more details see https://docs.edgexfoundry.org/latest/microservices/application/GeneralAppServiceConfig/#application-settings
-	deviceNames, err := app.service.GetAppSettingStrings("SimulationServer")
+	deviceNames, err := app.service.GetAppSettingStrings("DeviceNames")
 	if err != nil {
 		app.lc.Errorf("failed to retrieve DeviceNames from configuration: %s", err.Error())
 		return -1
 	}
-
+	app.lc.Infof("DeviceNames : %s", deviceNames)
 	// More advance custom structured configuration can be defined and loaded as in this example.
 	// For more details see https://docs.edgexfoundry.org/latest/microservices/application/GeneralAppServiceConfig/#custom-configuration
 	// TODO: Change to use your service's custom configuration struct
@@ -134,6 +134,16 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 	err = app.service.AddFunctionsPipelineForTopics("Int32s", []string{"events/device/device-virtual/+/+/Int32"},
 		sample.LogEventDetails,
 		sample.SendGetCommand,
+		sample.ConvertEventToXML,
+		sample.OutputXML)
+	if err != nil {
+		app.lc.Errorf("AddFunctionsPipelineForTopic returned error: %s", err.Error())
+		return -1
+	}
+
+	err = app.service.AddFunctionsPipelineForTopics("Counter1", []string{"events/#"},
+		// transforms.NewFilterFor([]string{"Counter", "Random"}).FilterByResourceName,
+		sample.LogEventDetails,
 		sample.ConvertEventToXML,
 		sample.OutputXML)
 	if err != nil {

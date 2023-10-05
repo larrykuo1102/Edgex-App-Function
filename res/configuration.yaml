@@ -5,11 +5,11 @@ Writable:
 
   InsecureSecrets:
     # TODO: Remove if not using HTTPS Webserver
-    HTTPS:
-      path: "https"
-      Secrets:
-        cert: ""
-        key: ""
+    # HTTPS:
+    #   path: "https"
+    #   Secrets:
+    #     cert: ""
+    #     key: ""
 
   Telemetry:
     Metrics: # All service's metric private configuration metrics must be listed here.
@@ -26,11 +26,11 @@ Service:
   StartupMsg: "azure-iot Application Service has started"
 
 # TODO: Remove section if not using HTTPS Webserver. Default protocol is HTTP if section is empty
-HttpServer:
-  Protocol: "http"
-  SecretName: "https"
-  HTTPSCertName: "cert"
-  HTTPSKeyName: "key"
+# HttpServer:
+#   Protocol: "http"
+#   SecretName: "https"
+#   HTTPSCertName: "cert"
+#   HTTPSKeyName: "key"
 
 Clients:
   core-data:
@@ -39,9 +39,9 @@ Clients:
     Port: 59880
 
   core-command:
-    # Protocol: "http"
-    # Host: "localhost"
-    # Port: 59882
+    Protocol: "http"
+    Host: "localhost"
+    Port: 59882
     # Choose to use new messaging based communication for Command Client.
     # Only valid if MessageBus Trigger is used
     # If prefer REST, remove below and uncomment above
@@ -62,7 +62,7 @@ Trigger:
   # Note that the MessageBus connection above is used by edgex-messagebus trigger which is the default set in common config
   # Default value for SubscribeTopics is aslo set in common config
   PublishTopic: "event-xml"  # Base topic is prepened to this topic when using edgex-messagebus
-
+  SubscribeTopics: "events/#"
 # TODO: Add custom settings needed by your app service or remove if you don't have any settings.
 # This can be any Key/Value pair you need.
 # For more details see: https://docs.edgexfoundry.org/latest/microservices/application/GeneralAppServiceConfig/#application-settings
