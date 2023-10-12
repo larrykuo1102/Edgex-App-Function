@@ -26,6 +26,8 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v3/pkg/interfaces"
 
+	"github.com/amenzhinsky/iothub/iotdevice"
+	iotmqtt "github.com/amenzhinsky/iothub/iotdevice/transport/mqtt"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 )
@@ -199,6 +201,62 @@ func (s *Sample) ConvertEventToXML(ctx interfaces.AppFunctionContext, data inter
 	// Returning true indicates that the pipeline execution should continue with the next function
 	// using the event passed as input in this case.
 	return true, xml
+}
+
+func (s *Sample) UploadIOTHub(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	lc := ctx.LoggingClient()
+	lc.Debugf("UploadIOTHub called in pipeline '%s'", ctx.PipelineId())
+	if data == nil {
+		return false, fmt.Errorf("function UploadIOTHub in pipeline '%s': No Data Received", ctx.PipelineId())
+	}
+	event, ok := data.(dtos.Event)
+	if !ok {
+		return false, fmt.Errorf("function SendGetCommand in pipeline '%s', type received is not an Event", ctx.PipelineId())
+	}
+
+	c, err := iotdevice.NewFromConnectionString(
+		iotmqtt.New(), "HostName=Larry-iot-hub.azure-devices.net;DeviceId=edgex-opcua;SharedAccessKey=zFS7laciy3N2Km5KNSbsoZ6aFoPoq+uYBAIoTAwNa6M=",
+	)
+	if err != nil {
+		lc.Debugf("%s", err)
+	}
+
+	// connect to the iothub
+	if err = c.Connect(context.Background()); err != nil {
+		lc.Debugf("%s", err)
+	}
+
+	for index, reading := range event.Readings {
+		switch strings.ToLower(reading.ValueType) {
+		case strings.ToLower(common.ValueTypeBinary):
+			// send a device-to-cloud message
+			if err = c.SendEvent(context.Background(), []byte(reading.Value)); err != nil {
+				lc.Debugf("%s", err)
+			}
+			lc.Infof(
+				"Reading #%d received in pipeline '%s' with ID=%s, Resource=%s, ValueType=%s, MediaType=%s and BinaryValue of size=`%d`",
+				index+1,
+				ctx.PipelineId(),
+				reading.Id,
+				reading.ResourceName,
+				reading.ValueType,
+				reading.MediaType,
+				len(reading.BinaryValue))
+		default:
+			if err = c.SendEvent(context.Background(), []byte(reading.Value)); err != nil {
+				lc.Debugf("%s", err)
+			}
+			lc.Infof("Reading #%d received in pipeline '%s' with ID=%s, Resource=%s, ValueType=%s, Value=`%s`",
+				index+1,
+				ctx.PipelineId(),
+				reading.Id,
+				reading.ResourceName,
+				reading.ValueType,
+				reading.Value)
+		}
+	}
+
+	return true, event
 }
 
 // OutputXML is an example of processing transformed data
